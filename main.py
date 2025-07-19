@@ -1,30 +1,23 @@
-from flask import Flask, request
-import requests
+const BOT_TOKEN = "7504653152:AAEtS7QPgdSe5VnUpiCU_GEJXq84i5qKJ4k";  // ← Aapka bot token yahan paste karo
+const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-# ✅ Set your bot token here directly
-TOKEN = "7504653152:AAEtS7QPgdSe5VnUpiCU_GEJXq84i5qKJ4k"
-URL = f"https://api.telegram.org/bot{TOKEN}/"
+Deno.serve(async (req) => {
+  const update = await req.json();
+  const message = update.message;
+  if (!message) return new Response("no message");
 
-app = Flask(__name__)
+  const chat_id = message.chat.id;
+  const text = message.text || "";
 
-def send_message(chat_id, text):
-    requests.post(URL + "sendMessage", json={"chat_id": chat_id, "text": text})
+  const reply = text === "/start"
+    ? "👋 Hello from Deno Deploy!"
+    : `You said: ${text}`;
 
-@app.route("/", methods=["GET"])
-def home():
-    return "Bot is running!"
+  await fetch(`${API_URL}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id, text: reply }),
+  });
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.get_json()
-    if "message" in data:
-        chat_id = data["message"]["chat"]["id"]
-        text = data["message"].get("text", "")
-        if text == "/start":
-            send_message(chat_id, "👋 Hello! I'm alive on Railway!")
-        else:
-            send_message(chat_id, f"You said: {text}")
-    return "OK", 200
-
-if __name__ == "__main__":
-    app.run(debug=True)
+  return new Response("ok");
+});
